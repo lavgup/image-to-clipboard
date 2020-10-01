@@ -28,8 +28,8 @@ class ImageToClipboard extends Plugin {
                     ...ContextMenu.renderRawItems([
                         {
                             type: 'button',
-                            name: `Copy To Clipboard`,
-                            id: `image-to-clipboard`,
+                            name: 'Copy To Clipboard',
+                            id: 'image-to-clipboard',
                             onClick: () => {
                                 this.copyToClipboard(target);
                             }
