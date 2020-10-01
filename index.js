@@ -1,5 +1,6 @@
 const { join } = require('path');
 const request = require('request');
+const Settings = require('./Settings');
 const { Plugin } = require('powercord/entities');
 const { getModule } = require('powercord/webpack');
 const { writeFileSync, unlinkSync } = require('fs');
@@ -10,7 +11,16 @@ const { inject, uninject } = require('powercord/injector');
 
 class ImageToClipboard extends Plugin {
     async startPlugin() {
+        this.registerSettings();
         await this.injectContextMenu();
+    }
+
+    registerSettings() {
+        powercord.api.settings.registerSettings(`itc-settings`, {
+            category: this.entityID,
+            label: "Image to Clipboard",
+            render: Settings,
+        });
     }
 
     async injectContextMenu() {
@@ -28,8 +38,8 @@ class ImageToClipboard extends Plugin {
                     ...ContextMenu.renderRawItems([
                         {
                             type: 'button',
-                            name: 'Copy To Clipboard',
-                            id: 'image-to-clipboard',
+                            name: `Copy To Clipboard`,
+                            id: `image-to-clipboard`,
                             onClick: () => {
                                 this.copyToClipboard(target);
                             }
@@ -46,18 +56,20 @@ class ImageToClipboard extends Plugin {
         const url = getOwnerInstance(target).props.href || target.src;
 
         request({ url: url, encoding: null }, (error, response, buffer) => {
-            if (error) return powercord.api.notices.sendToast('ITCError', {
-                header: 'Error',
-                content: `Error occurred while copying image\n${error.message}`,
-                type: 'info',
-                timeout: 10e3,
-                buttons: [{
-                    text: 'Got It',
-                    color: 'red',
-                    size: 'medium',
-                    look: 'outlined',
-                }],
-            });
+            if (error) {
+                return powercord.api.notices.sendToast('ITCError', {
+                    header: 'Error',
+                    content: `Error occurred while copying image\n${error.message}`,
+                    type: 'info',
+                    timeout: 10e3,
+                    buttons: [{
+                        text: 'Got It',
+                        color: 'red',
+                        size: 'medium',
+                        look: 'outlined',
+                    }],
+                });
+            }
 
             if (process.platform === "win32" || process.platform === "darwin") {
                 clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
@@ -68,23 +80,28 @@ class ImageToClipboard extends Plugin {
                 unlinkSync(file);
             }
 
-            powercord.api.notices.sendToast('ITCSuccess', {
-                header: 'Success',
-                content: 'Image copied to clipboard',
-                type: 'info',
-                timeout: 10e3,
-                buttons: [{
-                    text: 'Got It',
-                    color: 'green',
-                    size: 'medium',
-                    look: 'outlined',
-                }],
-            });
+            const toastOnSuccess = this.settings.get('toastOnSuccess', true);
+
+            if (toastOnSuccess) {
+                powercord.api.notices.sendToast('ITCSuccess', {
+                    header: 'Success',
+                    content: 'Image copied to clipboard',
+                    type: 'info',
+                    timeout: 10e3,
+                    buttons: [{
+                        text: 'Got It',
+                        color: 'green',
+                        size: 'medium',
+                        look: 'outlined',
+                    }],
+                });
+            }
         });
     }
 
     pluginWillUnload() {
         uninject('image-to-clipboard');
+        powercord.api.settings.unregisterSettings('itc-settings')
     }
 }
 
