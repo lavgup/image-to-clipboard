@@ -1,6 +1,5 @@
 const { join } = require('path');
 const request = require('request');
-const Settings = require('./Settings');
 const { Plugin } = require('powercord/entities');
 const { getModule } = require('powercord/webpack');
 const { writeFileSync, unlinkSync } = require('fs');
@@ -11,16 +10,7 @@ const { inject, uninject } = require('powercord/injector');
 
 class ImageToClipboard extends Plugin {
     async startPlugin() {
-        this.registerSettings();
         await this.injectContextMenu();
-    }
-
-    registerSettings() {
-        powercord.api.settings.registerSettings(`itc-settings`, {
-            category: this.entityID,
-            label: "Image to Clipboard",
-            render: Settings,
-        });
     }
 
     async injectContextMenu() {
@@ -79,29 +69,11 @@ class ImageToClipboard extends Plugin {
                 clipboard.write({ image: file });
                 unlinkSync(file);
             }
-
-            const toastOnSuccess = this.settings.get('toastOnSuccess', true);
-
-            if (toastOnSuccess) {
-                powercord.api.notices.sendToast('ITCSuccess', {
-                    header: 'Success',
-                    content: 'Image copied to clipboard',
-                    type: 'info',
-                    timeout: 10e3,
-                    buttons: [{
-                        text: 'Got It',
-                        color: 'green',
-                        size: 'medium',
-                        look: 'outlined',
-                    }],
-                });
-            }
         });
     }
 
     pluginWillUnload() {
         uninject('image-to-clipboard');
-        powercord.api.settings.unregisterSettings('itc-settings')
     }
 }
 
