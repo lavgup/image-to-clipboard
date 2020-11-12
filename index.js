@@ -61,10 +61,10 @@ class ImageToClipboard extends Plugin {
                 });
             }
 
-            if (process.platform === "win32" || process.platform === "darwin") {
+            if (process.platform === 'win32' || process.platform === 'darwin') {
                 clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
             } else {
-                const file = join(process.env.HOME || process.env.USERPROFILE, "img-to-clipboard (temp).png");
+                const file = join(process.env.HOME || process.env.USERPROFILE, 'img-to-clipboard (temp).png');
                 writeFileSync(file, buffer, { encoding: null });
                 clipboard.write({ image: file });
                 unlinkSync(file);
