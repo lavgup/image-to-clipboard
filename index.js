@@ -15,11 +15,12 @@ class ImageToClipboard extends Plugin {
 
     async injectContextMenu() {
         const { imageWrapper } = await getModule(['imageWrapper']);
-        const module = await getModule(
+        const MessageContextMenu = await getModule(
             m => m.default && m.default.displayName === 'MessageContextMenu'
         );
+        const Default = MessageContextMenu.default;
 
-        inject('image-to-clipboard', module, 'default', ([{ target }], res) => {
+        inject('image-to-clipboard', MessageContextMenu, 'default', ([{ target }], res) => {
             if (
                 target.tagName.toLowerCase() === 'img' &&
                 target.parentElement.classList.contains(imageWrapper)
@@ -30,9 +31,7 @@ class ImageToClipboard extends Plugin {
                             type: 'button',
                             name: `Copy To Clipboard`,
                             id: `image-to-clipboard`,
-                            onClick: () => {
-                                this.copyToClipboard(target);
-                            }
+                            onClick: () => this.copyToClipboard(target)
                         }
                     ])
                 );
@@ -40,6 +39,8 @@ class ImageToClipboard extends Plugin {
 
             return res;
         });
+
+        Object.assign(MessageContextMenu.default, Default);
     }
 
     copyToClipboard(target) {
