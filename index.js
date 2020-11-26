@@ -8,9 +8,20 @@ const { getOwnerInstance } = require('powercord/util');
 const { ContextMenu } = require('powercord/components');
 const { inject, uninject } = require('powercord/injector');
 
+const Settings = require('./components/Settings');
+
 class ImageToClipboard extends Plugin {
     async startPlugin() {
+        this.registerSettings();
         await this.injectContextMenu();
+    }
+
+    registerSettings() {
+        powercord.api.settings.registerSettings(`itc-settings`, {
+            category: this.entityID,
+            label: "Image to Clipboard",
+            render: Settings,
+        });
     }
 
     async injectContextMenu() {
@@ -46,35 +57,55 @@ class ImageToClipboard extends Plugin {
     copyToClipboard(target) {
         const url = getOwnerInstance(target).props.href || target.src;
 
-        request({ url: url, encoding: null }, (error, response, buffer) => {
-            if (error) {
-                return powercord.api.notices.sendToast('ITCError', {
-                    header: 'Error',
-                    content: `Error occurred while copying image\n${error.message}`,
+        try {
+            request({ url, encoding: null }, (error, response, buffer) => {
+                if (error) throw new Error(error);
+
+                if (process.platform === 'win32' || process.platform === 'darwin') {
+                    clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
+                } else {
+                    const file = join(process.env.HOME || process.env.USERPROFILE, 'img-to-clipboard (temp).png');
+                    writeFileSync(file, buffer, { encoding: null });
+                    clipboard.write({ image: file });
+                    unlinkSync(file);
+                }
+            });
+
+            const toastOnSuccess = this.settings.get('toastOnSuccess', true);
+
+            if (toastOnSuccess) {
+                powercord.api.notices.sendToast('ITCSuccess', {
+                    header: 'Success',
+                    content: 'Image successfully copied to clipboard',
                     type: 'info',
                     timeout: 10e3,
                     buttons: [{
                         text: 'Got It',
-                        color: 'red',
+                        color: 'green',
                         size: 'medium',
                         look: 'outlined',
                     }],
                 });
             }
-
-            if (process.platform === 'win32' || process.platform === 'darwin') {
-                clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
-            } else {
-                const file = join(process.env.HOME || process.env.USERPROFILE, 'img-to-clipboard (temp).png');
-                writeFileSync(file, buffer, { encoding: null });
-                clipboard.write({ image: file });
-                unlinkSync(file);
-            }
-        });
+        } catch (err) {
+            return powercord.api.notices.sendToast('ITCError', {
+                header: 'Error',
+                content: `Error occurred while copying image\n${err.message}`,
+                type: 'info',
+                timeout: 10e3,
+                buttons: [{
+                    text: 'Got It',
+                    color: 'red',
+                    size: 'medium',
+                    look: 'outlined',
+                }],
+            });
+        }
     }
 
     pluginWillUnload() {
         uninject('image-to-clipboard');
+        powercord.api.settings.unregisterSettings('itc-settings');
     }
 }
 
