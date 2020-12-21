@@ -1,0 +1,11 @@
+{
+  "IMAGE_TO_CLIPBOARD": "Image to Clipboard",
+  "COPY_TO_CLIPBOARD": "Copy to Clipboard",
+  "SUCCESS": "Success",
+  "ITC_SUCCESS": "Image successfully copied to clipboard",
+  "ERROR": "Error",
+  "GOT_IT": "Got it",
+  "ITC_ERROR": "Error occurred while copying image:",
+  "ITC_TOAST_NOTE": "Whether a confirmation toast should be sent on success",
+  "SEND_TOAST": "Send confirmation toast on success"
+}

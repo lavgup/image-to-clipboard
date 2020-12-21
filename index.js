@@ -1,17 +1,19 @@
+const i18n = require('./i18n');
 const { join } = require('path');
 const request = require('request');
 const { Plugin } = require('powercord/entities');
-const { getModule } = require('powercord/webpack');
 const { writeFileSync, unlinkSync } = require('fs');
 const { clipboard, nativeImage } = require('electron');
 const { getOwnerInstance } = require('powercord/util');
 const { ContextMenu } = require('powercord/components');
 const { inject, uninject } = require('powercord/injector');
+const { getModule, i18n: { Messages } } = require('powercord/webpack');
 
 const Settings = require('./components/Settings');
 
 class ImageToClipboard extends Plugin {
     async startPlugin() {
+        powercord.api.i18n.loadAllStrings(i18n);
         this.registerSettings();
         await this.injectContextMenu();
     }
@@ -19,7 +21,7 @@ class ImageToClipboard extends Plugin {
     registerSettings() {
         powercord.api.settings.registerSettings(`itc-settings`, {
             category: this.entityID,
-            label: "Image to Clipboard",
+            label: Messages.IMAGE_TO_CLIPBOARD,
             render: Settings,
         });
     }
@@ -40,7 +42,7 @@ class ImageToClipboard extends Plugin {
                     ...ContextMenu.renderRawItems([
                         {
                             type: 'button',
-                            name: `Copy To Clipboard`,
+                            name: Messages.COPY_TO_CLIPBOARD,
                             id: `image-to-clipboard`,
                             onClick: () => this.copyToClipboard(target)
                         }
@@ -75,12 +77,12 @@ class ImageToClipboard extends Plugin {
 
             if (toastOnSuccess) {
                 powercord.api.notices.sendToast('ITCSuccess', {
-                    header: 'Success',
-                    content: 'Image successfully copied to clipboard',
+                    header: Messages.SUCCESS,
+                    content: Messages.ITC_SUCCESS,
                     type: 'info',
                     timeout: 10e3,
                     buttons: [{
-                        text: 'Got It',
+                        text: Messages.GOT_IT,
                         color: 'green',
                         size: 'medium',
                         look: 'outlined',
@@ -90,11 +92,11 @@ class ImageToClipboard extends Plugin {
         } catch (err) {
             return powercord.api.notices.sendToast('ITCError', {
                 header: 'Error',
-                content: `Error occurred while copying image\n${err.message}`,
+                content: `${Messages.ITC_ERROR} ${err.message}`,
                 type: 'info',
                 timeout: 10e3,
                 buttons: [{
-                    text: 'Got It',
+                    text: Messages.GOT_IT,
                     color: 'red',
                     size: 'medium',
                     look: 'outlined',

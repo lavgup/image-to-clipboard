@@ -1,5 +1,5 @@
-const { React } = require('powercord/webpack');
 const { SwitchItem } = require('powercord/components/settings');
+const { React, i18n: { Messages } } = require('powercord/webpack');
 
 class Settings extends React.Component {
     render() {
@@ -7,11 +7,11 @@ class Settings extends React.Component {
 
         return (
             <SwitchItem
-                note="Whether a confirmation toast should be sent on success"
+                note={Messages.ITC_TOAST_NOTE}
                 value={getSetting("toastOnSuccess", true)}
                 onChange={() => toggleSetting("toastOnSuccess")}
             >
-                Send confirmation toast on success
+                {Messages.SEND_TOAST}
             </SwitchItem>
         )
     }
