@@ -1,13 +1,11 @@
 const i18n = require('./i18n');
-const { join } = require('path');
-const request = require('request');
+const https = require('https');
 const { Plugin } = require('powercord/entities');
-const { writeFileSync, unlinkSync } = require('fs');
 const { clipboard, nativeImage } = require('electron');
-const { getOwnerInstance } = require('powercord/util');
 const { ContextMenu } = require('powercord/components');
 const { inject, uninject } = require('powercord/injector');
 const { getModule, i18n: { Messages } } = require('powercord/webpack');
+const { getOwnerInstance, findInReactTree } = require('powercord/util');
 
 const Settings = require('./components/Settings');
 
@@ -34,10 +32,17 @@ class ImageToClipboard extends Plugin {
         const Default = MessageContextMenu.default;
 
         inject('image-to-clipboard', MessageContextMenu, 'default', ([{ target }], res) => {
+
             if (
                 target.tagName.toLowerCase() === 'img' &&
                 target.parentElement.classList.contains(imageWrapper)
             ) {
+
+                const nativeExists = findInReactTree(res.props.children, child =>
+                    child?.props?.children && findInReactTree(child.props.children, c => c?.props?.id === 'copy-image')
+                );
+                if (nativeExists) return res;
+
                 res.props.children.push(
                     ...ContextMenu.renderRawItems([
                         {
@@ -60,17 +65,16 @@ class ImageToClipboard extends Plugin {
         const url = getOwnerInstance(target).props.href || target.src;
 
         try {
-            request({ url, encoding: null }, (error, response, buffer) => {
-                if (error) throw new Error(error);
+            https.get(url, res => {
+                const data = [];
 
-                if (process.platform === 'win32' || process.platform === 'darwin') {
-                    clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
-                } else {
-                    const file = join(process.env.HOME || process.env.USERPROFILE, 'img-to-clipboard (temp).png');
-                    writeFileSync(file, buffer, { encoding: null });
-                    clipboard.write({ image: file });
-                    unlinkSync(file);
-                }
+                res
+                    .on('data', chunk => data.push(chunk))
+                    .on('end', () => {
+                        const buffer = Buffer.concat(data);
+
+                        clipboard.write({ image: nativeImage.createFromBuffer(buffer) });
+                    });
             });
 
             const toastOnSuccess = this.settings.get('toastOnSuccess', true);
